@@ -1,0 +1,281 @@
+
+import numpy as np
+import pandas as pd
+import os
+from tensorflow.keras.applications.vgg16 import preprocess_input
+import tensorflow
+from tensorflow import keras
+from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense,Flatten,Dropout
+import os
+import matplotlib.pyplot as plt
+tumor_path='Brain Tumor Data Set/Brain Tumor/'
+healthy_path='Brain Tumor Data Set/Healthy/'
+filepaths = []
+labels= []
+dict_list = [tumor_path, healthy_path]
+for i, j in enumerate(dict_list):
+    flist=os.listdir(j)
+    for f in flist:
+        fpath=os.path.join(j,f)
+        filepaths.append(fpath)
+        if i==0:
+            labels.append('Brain Tumor')
+        else:
+            labels.append('Healthy')
+df=pd.DataFrame({'Filepath': filepaths,'label': labels})
+df.head()
+Filepath	label
+0	Brain Tumor Data Set/Brain Tumor/Cancer (1).jpg	Brain Tumor
+1	Brain Tumor Data Set/Brain Tumor/Cancer (1).png	Brain Tumor
+2	Brain Tumor Data Set/Brain Tumor/Cancer (1).tif	Brain Tumor
+3	Brain Tumor Data Set/Brain Tumor/Cancer (10).jpg	Brain Tumor
+4	Brain Tumor Data Set/Brain Tumor/Cancer (10).tif	Brain Tumor
+train_df, val_df = train_test_split(df, test_size=0.3, random_state=42)
+total_train = train_df.shape[0]
+total_valid = val_df.shape[0]
+train_datagen = ImageDataGenerator(preprocessing_function=preprocess_input,
+                                  rotation_range=15,
+                                  shear_range=0.1,
+                                  zoom_range=0.2,
+                                  horizontal_flip=True,
+                                  width_shift_range=0.1,
+                                  height_shift_range=0.1)
+
+train_generator = train_datagen.flow_from_dataframe(train_df,
+                                                  x_col='Filepath',y_col='label',
+                                                  target_size=(224,224),
+                                                  batch_size=32,
+                                                  class_mode="categorical")
+
+valid_datagen = ImageDataGenerator(preprocessing_function= preprocess_input)
+valid_generator = valid_datagen.flow_from_dataframe(val_df,
+                                                   x_col='Filepath',y_col='label',
+                                                   target_size=(224,224),
+                                                   batch_size=32,
+                                                   class_mode="categorical")
+Found 3220 validated image filenames belonging to 2 classes.
+Found 1380 validated image filenames belonging to 2 classes.
+train_generator.class_indices
+{'Brain Tumor': 0, 'Healthy': 1}
+valid_generator.class_indices
+{'Brain Tumor': 0, 'Healthy': 1}
+vgg_model=tensorflow.keras.applications.vgg16.VGG16()
+model=Sequential()
+for layer in vgg_model.layers:
+    model.add(layer)
+model.summary()
+Model: "sequential"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+block1_conv1 (Conv2D)        (None, 224, 224, 64)      1792      
+_________________________________________________________________
+block1_conv2 (Conv2D)        (None, 224, 224, 64)      36928     
+_________________________________________________________________
+block1_pool (MaxPooling2D)   (None, 112, 112, 64)      0         
+_________________________________________________________________
+block2_conv1 (Conv2D)        (None, 112, 112, 128)     73856     
+_________________________________________________________________
+block2_conv2 (Conv2D)        (None, 112, 112, 128)     147584    
+_________________________________________________________________
+block2_pool (MaxPooling2D)   (None, 56, 56, 128)       0         
+_________________________________________________________________
+block3_conv1 (Conv2D)        (None, 56, 56, 256)       295168    
+_________________________________________________________________
+block3_conv2 (Conv2D)        (None, 56, 56, 256)       590080    
+_________________________________________________________________
+block3_conv3 (Conv2D)        (None, 56, 56, 256)       590080    
+_________________________________________________________________
+block3_pool (MaxPooling2D)   (None, 28, 28, 256)       0         
+_________________________________________________________________
+block4_conv1 (Conv2D)        (None, 28, 28, 512)       1180160   
+_________________________________________________________________
+block4_conv2 (Conv2D)        (None, 28, 28, 512)       2359808   
+_________________________________________________________________
+block4_conv3 (Conv2D)        (None, 28, 28, 512)       2359808   
+_________________________________________________________________
+block4_pool (MaxPooling2D)   (None, 14, 14, 512)       0         
+_________________________________________________________________
+block5_conv1 (Conv2D)        (None, 14, 14, 512)       2359808   
+_________________________________________________________________
+block5_conv2 (Conv2D)        (None, 14, 14, 512)       2359808   
+_________________________________________________________________
+block5_conv3 (Conv2D)        (None, 14, 14, 512)       2359808   
+_________________________________________________________________
+block5_pool (MaxPooling2D)   (None, 7, 7, 512)         0         
+_________________________________________________________________
+flatten (Flatten)            (None, 25088)             0         
+_________________________________________________________________
+fc1 (Dense)                  (None, 4096)              102764544 
+_________________________________________________________________
+fc2 (Dense)                  (None, 4096)              16781312  
+_________________________________________________________________
+predictions (Dense)          (None, 1000)              4097000   
+=================================================================
+Total params: 138,357,544
+Trainable params: 138,357,544
+Non-trainable params: 0
+_________________________________________________________________
+model.pop()
+model.summary()
+Model: "sequential"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+block1_conv1 (Conv2D)        (None, 224, 224, 64)      1792      
+_________________________________________________________________
+block1_conv2 (Conv2D)        (None, 224, 224, 64)      36928     
+_________________________________________________________________
+block1_pool (MaxPooling2D)   (None, 112, 112, 64)      0         
+_________________________________________________________________
+block2_conv1 (Conv2D)        (None, 112, 112, 128)     73856     
+_________________________________________________________________
+block2_conv2 (Conv2D)        (None, 112, 112, 128)     147584    
+_________________________________________________________________
+block2_pool (MaxPooling2D)   (None, 56, 56, 128)       0         
+_________________________________________________________________
+block3_conv1 (Conv2D)        (None, 56, 56, 256)       295168    
+_________________________________________________________________
+block3_conv2 (Conv2D)        (None, 56, 56, 256)       590080    
+_________________________________________________________________
+block3_conv3 (Conv2D)        (None, 56, 56, 256)       590080    
+_________________________________________________________________
+block3_pool (MaxPooling2D)   (None, 28, 28, 256)       0         
+_________________________________________________________________
+block4_conv1 (Conv2D)        (None, 28, 28, 512)       1180160   
+_________________________________________________________________
+block4_conv2 (Conv2D)        (None, 28, 28, 512)       2359808   
+_________________________________________________________________
+block4_conv3 (Conv2D)        (None, 28, 28, 512)       2359808   
+_________________________________________________________________
+block4_pool (MaxPooling2D)   (None, 14, 14, 512)       0         
+_________________________________________________________________
+block5_conv1 (Conv2D)        (None, 14, 14, 512)       2359808   
+_________________________________________________________________
+block5_conv2 (Conv2D)        (None, 14, 14, 512)       2359808   
+_________________________________________________________________
+block5_conv3 (Conv2D)        (None, 14, 14, 512)       2359808   
+_________________________________________________________________
+block5_pool (MaxPooling2D)   (None, 7, 7, 512)         0         
+_________________________________________________________________
+flatten (Flatten)            (None, 25088)             0         
+_________________________________________________________________
+fc1 (Dense)                  (None, 4096)              102764544 
+_________________________________________________________________
+fc2 (Dense)                  (None, 4096)              16781312  
+=================================================================
+Total params: 134,260,544
+Trainable params: 134,260,544
+Non-trainable params: 0
+_________________________________________________________________
+for layer in model.layers:
+    layer.trainable=False
+model.add(Dense(2,activation='softmax'))
+model.summary()
+Model: "sequential"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+block1_conv1 (Conv2D)        (None, 224, 224, 64)      1792      
+_________________________________________________________________
+block1_conv2 (Conv2D)        (None, 224, 224, 64)      36928     
+_________________________________________________________________
+block1_pool (MaxPooling2D)   (None, 112, 112, 64)      0         
+_________________________________________________________________
+block2_conv1 (Conv2D)        (None, 112, 112, 128)     73856     
+_________________________________________________________________
+block2_conv2 (Conv2D)        (None, 112, 112, 128)     147584    
+_________________________________________________________________
+block2_pool (MaxPooling2D)   (None, 56, 56, 128)       0         
+_________________________________________________________________
+block3_conv1 (Conv2D)        (None, 56, 56, 256)       295168    
+_________________________________________________________________
+block3_conv2 (Conv2D)        (None, 56, 56, 256)       590080    
+_________________________________________________________________
+block3_conv3 (Conv2D)        (None, 56, 56, 256)       590080    
+_________________________________________________________________
+block3_pool (MaxPooling2D)   (None, 28, 28, 256)       0         
+_________________________________________________________________
+block4_conv1 (Conv2D)        (None, 28, 28, 512)       1180160   
+_________________________________________________________________
+block4_conv2 (Conv2D)        (None, 28, 28, 512)       2359808   
+_________________________________________________________________
+block4_conv3 (Conv2D)        (None, 28, 28, 512)       2359808   
+_________________________________________________________________
+block4_pool (MaxPooling2D)   (None, 14, 14, 512)       0         
+_________________________________________________________________
+block5_conv1 (Conv2D)        (None, 14, 14, 512)       2359808   
+_________________________________________________________________
+block5_conv2 (Conv2D)        (None, 14, 14, 512)       2359808   
+_________________________________________________________________
+block5_conv3 (Conv2D)        (None, 14, 14, 512)       2359808   
+_________________________________________________________________
+block5_pool (MaxPooling2D)   (None, 7, 7, 512)         0         
+_________________________________________________________________
+flatten (Flatten)            (None, 25088)             0         
+_________________________________________________________________
+fc1 (Dense)                  (None, 4096)              102764544 
+_________________________________________________________________
+fc2 (Dense)                  (None, 4096)              16781312  
+_________________________________________________________________
+dense (Dense)                (None, 2)                 8194      
+=================================================================
+Total params: 134,268,738
+Trainable params: 8,194
+Non-trainable params: 134,260,544
+_________________________________________________________________
+model.compile(optimizer=keras.optimizers.Adam(0.0001),loss='categorical_crossentropy',metrics=['accuracy'])
+history= model.fit_generator(train_generator,
+                   epochs=20,
+                   validation_data=valid_generator,
+                   validation_steps= total_valid//32,
+                   steps_per_epoch= total_train//32)
+C:\Users\ASUS\AppData\Local\Programs\Python\Python39\lib\site-packages\tensorflow\python\keras\engine\training.py:1940: UserWarning: `Model.fit_generator` is deprecated and will be removed in a future version. Please use `Model.fit`, which supports generators.
+  warnings.warn('`Model.fit_generator` is deprecated and '
+Epoch 1/20
+100/100 [==============================] - 58s 490ms/step - loss: 0.6576 - accuracy: 0.6631 - val_loss: 0.4649 - val_accuracy: 0.7754
+Epoch 2/20
+100/100 [==============================] - 43s 431ms/step - loss: 0.3901 - accuracy: 0.8287 - val_loss: 0.3643 - val_accuracy: 0.8467
+Epoch 3/20
+100/100 [==============================] - 43s 433ms/step - loss: 0.3288 - accuracy: 0.8607 - val_loss: 0.3230 - val_accuracy: 0.8677
+Epoch 4/20
+100/100 [==============================] - 43s 431ms/step - loss: 0.2886 - accuracy: 0.8821 - val_loss: 0.2935 - val_accuracy: 0.8779
+Epoch 5/20
+100/100 [==============================] - 43s 432ms/step - loss: 0.2775 - accuracy: 0.8883 - val_loss: 0.2743 - val_accuracy: 0.8932
+Epoch 6/20
+100/100 [==============================] - 42s 416ms/step - loss: 0.2571 - accuracy: 0.8952 - val_loss: 0.2637 - val_accuracy: 0.8961
+Epoch 7/20
+100/100 [==============================] - 43s 432ms/step - loss: 0.2572 - accuracy: 0.8981 - val_loss: 0.2468 - val_accuracy: 0.9070
+Epoch 8/20
+100/100 [==============================] - 43s 430ms/step - loss: 0.2362 - accuracy: 0.9024 - val_loss: 0.2393 - val_accuracy: 0.9084
+Epoch 9/20
+100/100 [==============================] - 43s 432ms/step - loss: 0.2267 - accuracy: 0.9141 - val_loss: 0.2308 - val_accuracy: 0.9121
+Epoch 10/20
+100/100 [==============================] - 43s 433ms/step - loss: 0.2215 - accuracy: 0.9141 - val_loss: 0.2206 - val_accuracy: 0.9186
+Epoch 11/20
+100/100 [==============================] - 44s 439ms/step - loss: 0.2084 - accuracy: 0.9222 - val_loss: 0.2233 - val_accuracy: 0.9157
+Epoch 12/20
+100/100 [==============================] - 42s 419ms/step - loss: 0.1944 - accuracy: 0.9244 - val_loss: 0.2148 - val_accuracy: 0.9186
+Epoch 13/20
+100/100 [==============================] - 43s 428ms/step - loss: 0.1958 - accuracy: 0.9238 - val_loss: 0.2068 - val_accuracy: 0.9237
+Epoch 14/20
+100/100 [==============================] - 42s 422ms/step - loss: 0.1891 - accuracy: 0.9263 - val_loss: 0.1995 - val_accuracy: 0.9266
+Epoch 15/20
+100/100 [==============================] - 43s 427ms/step - loss: 0.1957 - accuracy: 0.9247 - val_loss: 0.1932 - val_accuracy: 0.9295
+Epoch 16/20
+100/100 [==============================] - 41s 412ms/step - loss: 0.1669 - accuracy: 0.9385 - val_loss: 0.1916 - val_accuracy: 0.9273
+Epoch 17/20
+100/100 [==============================] - 41s 410ms/step - loss: 0.1707 - accuracy: 0.9360 - val_loss: 0.1881 - val_accuracy: 0.9302
+Epoch 18/20
+100/100 [==============================] - 43s 431ms/step - loss: 0.1788 - accuracy: 0.9329 - val_loss: 0.1864 - val_accuracy: 0.9339
+Epoch 19/20
+100/100 [==============================] - 40s 403ms/step - loss: 0.1634 - accuracy: 0.9366 - val_loss: 0.1797 - val_accuracy: 0.9324
+Epoch 20/20
+100/100 [==============================] - 42s 417ms/step - loss: 0.1577 - accuracy: 0.9426 - val_loss: 0.1826 - val_accuracy: 0.9324
+from tensorflow.keras.models import save_model
+save_model(model, "tumor_detector.h5")
+ 
+ 
